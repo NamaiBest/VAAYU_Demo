@@ -35,7 +35,7 @@ The application opens in a clean geographic workspace. **Load demo** enables the
 - Maintenance workflow: fault → created work order → in progress → task completed → verified → recorded clearance. Completion alone does not make the aircraft available.
 - Scheduling timeline, mission register and manual assignment form with immediate constraint explanations.
 - Deterministic alternatives, transparent scores, dynamic before/after metrics, manual selection, approval, reject, cancel, undo and a chronological audit trail.
-- Interactive Leaflet geographic map with OpenStreetMap street tiles, a bundled Natural Earth outline, pan/zoom, regional presets and optional demo route/weather/airspace layers.
+- Interactive Leaflet geographic map on a bundled basemap showing India's official boundaries (all of J&K and Ladakh, including PoK, Gilgit-Baltistan and Aksai Chin), with state/UT borders, pan/zoom, regional presets and optional demo route/weather/airspace layers.
 - Crew qualification/readiness and duty management, fuel allocation and inventory reservations/consumption.
 - Role switcher, five scenario disruptions, comprehensive reset, clear source/freshness metadata and no live-feed claims.
 
@@ -124,7 +124,7 @@ Weather/restriction records explicitly store source context URL, SIMULATED mode,
 - The simulation clock stays at 02 Oct 2026, 13:30 IST for repeatability; interaction audit timestamps use actual time. No automatic mission completion or flight execution occurs.
 - Crew records represent complete fictional flight teams. Medical fitness is a simple readiness flag.
 - Maintenance stages advance on explicit recorded actions. Repair estimates are forecasts, not real elapsed-time gates; spare logistics is a simplified +4h shortage model.
-- The Leaflet map uses real geographic context. OpenStreetMap street detail requires internet access and is best-effort; the bundled Natural Earth outline works without external tile services. Demo hub placements remain synthetic and are not real facilities. Neither basemap supplies operational telemetry, weather or airspace clearances.
+- The Leaflet map uses real geographic context from a fully bundled basemap; it makes no external tile requests. Demo hub placements remain synthetic and are not real facilities. The basemap supplies no operational telemetry, weather or airspace clearances.
 - The default viewer uses five licensed reference models: A320, A350 and B737 (amvlab), Rafale (andertan), and Su-35 (Muhamad Mirza Arrafi), all CC BY 4.0 with embedded textures in WebGL. Inspection zones are approximate external overlays, not segmented manufacturer CAD. Synthetic transport capacities belong to the planning records, not the displayed aircraft. SVG compatibility mode uses simplified untextured materials. The exploded view is a separate illustrative component assembly.
 - The planner evaluates one mission at a time; it does not solve simultaneous disruptions globally, reposition aircraft automatically, model return legs or replace other missions automatically.
 - Fuel is a synthetic per-mission requirement plus a base allocation constraint, not a certified aerodynamic or flight-performance model. Known simulated restrictions are checked by route/time, not real altitude volumes.
@@ -144,5 +144,5 @@ The airframe selector loads separate A320, A350, B737, Rafale and Su-35 meshes w
 
 The clean workspace is the default for new and existing users upgrading to this version. It shows an India-region map and unavailable operational feeds, without simulated fleet counts, sample missions, hub labels or generated weather. The original scenario remains behind **Load demo** for workflow demonstrations. Mode choice persists separately under `vaayu-workspace-mode-v2`; scenario data remains under the existing `vaayu-demo-v1` key. Leaving the demo removes its records from every operational view without destroying the saved scenario.
 
-The new map uses Leaflet 1.9.4 with normal browser requests to `https://tile.openstreetmap.org/{z}/{x}/{y}.png`. It retains visible attribution, browser cache behavior and referrers; it does not prefetch or package OSM tiles. The outline layer bundles Natural Earth's public-domain 110m land polygons. See `public/maps/ATTRIBUTION.md`. Outline mode is a coarse geographic fallback, not navigation-grade cartography. Location labels appear on hover/focus, keeping routes unobstructed; mission details sit below the map.
+The map uses Leaflet 1.9.4 over `public/maps/india-official.geojson`, built from Natural Earth's public-domain 1:10m India point-of-view boundaries. Third-party raster tiles (including OpenStreetMap) draw de facto lines in Jammu & Kashmir, so none are used. See `public/maps/ATTRIBUTION.md` for how the file was built. It is small-scale reference cartography, not navigation-grade or a Survey of India product. Location labels appear on hover/focus, keeping routes unobstructed; mission details sit below the map.
 # VAAYU_Demo

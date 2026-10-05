@@ -301,19 +301,12 @@ export function Sources() {
       </div>
       <Panel title="Geographic map sources">
         <p>
-          Street map: OpenStreetMap contributors. Bundled outline: Natural Earth
-          public-domain land polygons. City labels are geographic reference
-          points, not operating bases.
+          Bundled basemap: Natural Earth public-domain boundaries, India point
+          of view. Jammu &amp; Kashmir and Ladakh are shown in full, including
+          PoK, Gilgit-Baltistan, Aksai Chin and the Shaksgam Valley. City labels
+          are geographic reference points, not operating bases.
         </p>
         <div className="row">
-          <a
-            className="text-btn"
-            href="https://www.openstreetmap.org/copyright"
-            target="_blank"
-            rel="noreferrer"
-          >
-            OpenStreetMap attribution
-          </a>
           <a
             className="text-btn"
             href="https://www.naturalearthdata.com/about/terms-of-use/"
@@ -324,9 +317,9 @@ export function Sources() {
           </a>
         </div>
         <p className="muted">
-          Street detail requires an internet connection. The outline map remains
-          available if tiles cannot load. Neither basemap supplies aviation
-          weather, aircraft positions or airspace clearance.
+          The basemap is bundled and needs no external tile service. It is a
+          small-scale reference map, not a Survey of India product, and supplies
+          no aviation weather, aircraft positions or airspace clearance.
         </p>
       </Panel>
       <div className="source-grid">

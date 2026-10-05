@@ -5306,9 +5306,6 @@ tbody tr:hover {
   z-index: 0;
   font-family: Inter, sans-serif;
 }
-.geo-leaflet .leaflet-tile-pane {
-  filter: saturate(0.35) contrast(0.94);
-}
 .geo-leaflet .leaflet-control-attribution {
   font-size: 9px;
   background: rgba(247, 250, 248, 0.95);

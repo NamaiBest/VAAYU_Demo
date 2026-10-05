@@ -7,10 +7,9 @@ import {
   Layers,
   ArrowUpRight,
   Navigation,
-  MapPin,
 } from "lucide-react";
 import type * as Leaflet from "leaflet";
-import type { GeoJsonObject } from "geojson";
+import type { Feature, GeoJsonObject } from "geojson";
 import { useDemo } from "../domain/store";
 import {
   activeMission,
@@ -55,11 +54,28 @@ const CITIES: [string, number, number][] = [
   ["Dhaka", 23.8103, 90.4125],
   ["Colombo", 6.9271, 79.8612],
 ];
+// India's official boundary: all of Jammu & Kashmir and Ladakh, including
+// PoK, Gilgit-Baltistan, Aksai Chin and the Shaksgam Valley. Raster tile
+// services draw de facto lines, so the basemap is fully bundled.
+const BASEMAP_STYLE: Record<string, Leaflet.PathOptions> = {
+  country: {
+    color: "#a9b6b3",
+    weight: 0.7,
+    fillColor: "#eceee8",
+    fillOpacity: 1,
+  },
+  state: {
+    color: "#9db0ad",
+    weight: 0.6,
+    fillColor: "#dbe1d7",
+    fillOpacity: 1,
+  },
+  india: { color: "#3f5f5c", weight: 1.6, fill: false },
+};
 type Controls = {
   zoom: (delta: number) => void;
   fit: (region: string) => void;
   update: () => void;
-  retry: () => void;
 };
 export function MissionMap({
   compact = false,
@@ -71,7 +87,6 @@ export function MissionMap({
   const { state: s, isDemo } = useDemo();
   const [selected, setSelected] = useState("RLF-204");
   const [region, setRegion] = useState("India");
-  const [street, setStreet] = useState(true);
   const [layerMenu, setLayerMenu] = useState(false);
   const [layers, setLayers] = useState({
     Missions: true,
@@ -83,11 +98,11 @@ export function MissionMap({
   const [mapError, setMapError] = useState(false);
   const host = useRef<HTMLDivElement>(null),
     api = useRef<Controls | null>(null);
-  const latest = useRef({ s, selected, street, layers });
+  const latest = useRef({ s, selected, layers });
   useEffect(() => {
-    latest.current = { s, selected, street, layers };
+    latest.current = { s, selected, layers };
     api.current?.update();
-  }, [s, selected, street, layers]);
+  }, [s, selected, layers]);
   useEffect(() => {
     let stopped = false,
       map: Leaflet.Map | undefined;
@@ -99,8 +114,14 @@ export function MissionMap({
         map = L.map(host.current, {
           zoomControl: false,
           scrollWheelZoom: !compact,
-          minZoom: 3,
-          maxZoom: 13,
+          minZoom: 4,
+          maxZoom: 9,
+          // Extent of the bundled basemap; nothing is drawn beyond it.
+          maxBounds: [
+            [-20, 20],
+            [55, 140],
+          ],
+          maxBoundsViscosity: 1,
           attributionControl: true,
         });
         const view = map;
@@ -108,41 +129,10 @@ export function MissionMap({
         view.createPane("geography").style.zIndex = "100";
         view.createPane("geographicLabels").style.zIndex = "150";
         const land = L.layerGroup().addTo(view);
-        const tiles = L.tileLayer(
-          "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-          {
-            maxZoom: 19,
-            keepBuffer: 1,
-            updateWhenIdle: true,
-            attribution:
-              '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
-          },
-        );
-        let failed = 0,
-          loadedTiles = 0;
-        tiles.on("tileload", () => {
-          loadedTiles++;
-          if (!stopped)
-            setMapStatus(
-              failed
-                ? "Street map · partial coverage"
-                : "OpenStreetMap · geographic basemap",
-            );
-        });
-        tiles.on("tileerror", () => {
-          failed++;
-          if (!stopped)
-            setMapStatus(
-              loadedTiles
-                ? "Street map · partial coverage"
-                : "Street tiles unavailable · outline map shown",
-            );
-        });
-        tiles.addTo(view);
         view.attributionControl.addAttribution(
-          '<a href="https://www.naturalearthdata.com/" target="_blank" rel="noreferrer">Natural Earth</a>',
+          'Boundaries: <a href="https://www.naturalearthdata.com/" target="_blank" rel="noreferrer">Natural Earth</a> (India view)',
         );
-        fetch("/maps/land.geojson", { signal: controller.signal })
+        fetch("/maps/india-official.geojson", { signal: controller.signal })
           .then((r) => {
             if (!r.ok) throw Error();
             return r.json();
@@ -152,12 +142,9 @@ export function MissionMap({
             L.geoJSON(data as GeoJsonObject, {
               pane: "geography",
               interactive: false,
-              style: {
-                color: "#899f9e",
-                weight: 0.7,
-                fillColor: "#dbe1d7",
-                fillOpacity: 1,
-              },
+              style: (feature?: Feature) =>
+                BASEMAP_STYLE[feature?.properties?.kind] ??
+                BASEMAP_STYLE.country,
             }).addTo(land);
             for (const [name, lat, lon] of CITIES) {
               const label = document.createElement("span");
@@ -175,8 +162,12 @@ export function MissionMap({
               }).addTo(land);
             }
           })
+          .then(() => {
+            if (!stopped)
+              setMapStatus("Official boundaries of India · bundled basemap");
+          })
           .catch(() => {
-            if (!stopped && !loadedTiles)
+            if (!stopped)
               setMapStatus(
                 "Map background unavailable · check your connection",
               );
@@ -189,8 +180,6 @@ export function MissionMap({
           });
         const update = () => {
           const current = latest.current;
-          if (current.street && !view.hasLayer(tiles)) tiles.addTo(view);
-          if (!current.street && view.hasLayer(tiles)) view.removeLayer(tiles);
           operations.clearLayers();
           const locations = new Map(current.s.locations.map((l) => [l.id, l]));
           if (current.layers.Weather)
@@ -311,12 +300,6 @@ export function MissionMap({
           zoom: (d) => view.setZoom(view.getZoom() + d),
           fit,
           update,
-          retry: () => {
-            failed = 0;
-            loadedTiles = 0;
-            setMapStatus("Reloading street map…");
-            tiles.redraw();
-          },
         };
         observer = new ResizeObserver(() => {
           view.invalidateSize({ pan: false });
@@ -361,14 +344,6 @@ export function MissionMap({
           ))}
         </div>
         <div className="geo-toolbar-right">
-          <button
-            className={!street ? "active" : ""}
-            aria-pressed={!street}
-            onClick={() => setStreet(!street)}
-          >
-            <MapPin size={14} />
-            {street ? "Street map" : "Outline map"}
-          </button>
           {isDemo && (
             <button
               aria-expanded={layerMenu}
@@ -450,11 +425,8 @@ export function MissionMap({
       <div className="geo-status">
         <span>
           <i className="dot grey" />
-          {street ? mapStatus : "Natural Earth · bundled geographic outline"}
+          {mapStatus}
         </span>
-        {street && mapStatus.includes("unavailable") && (
-          <button onClick={() => api.current?.retry()}>Retry tiles</button>
-        )}
         <span>WGS 84 · reference map</span>
       </div>
       {isDemo && (
